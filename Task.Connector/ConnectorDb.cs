@@ -1,18 +1,32 @@
-﻿using Task.Integration.Data.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Task.Connector.Data;
+using Task.Connector.Data.Models;
+using Task.Connector.Service;
+using Task.Integration.Data.Models;
 using Task.Integration.Data.Models.Models;
 
 namespace Task.Connector
 {
     public class ConnectorDb : IConnector
     {
+        private ApplicationDbContext _context;
         public void StartUp(string connectionString)
         {
-            throw new NotImplementedException();
+            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+            optionsBuilder.UseNpgsql(connectionString);
+            _context = new ApplicationDbContext(optionsBuilder.Options);
         }
 
         public void CreateUser(UserToCreate user)
         {
-            throw new NotImplementedException();
+            User userToAdd = new User() { Login = user.Login };
+            SetPropertiesService setPropertiesService = new SetPropertiesService();
+            setPropertiesService.SetUserProperties(user.Properties, userToAdd);
+            _context.User.Add(userToAdd);
+
+            PasswordEntity password = new PasswordEntity() { Password = user.HashPassword, UserId = user.Login };
+            _context.Passwords.Add(password);
+            _context.SaveChanges();
         }
 
         public IEnumerable<Property> GetAllProperties()
@@ -27,7 +41,7 @@ namespace Task.Connector
 
         public bool IsUserExists(string userLogin)
         {
-            throw new NotImplementedException();
+            return _context.User.Any(e => e.Login == userLogin);
         }
 
         public void UpdateUserProperties(IEnumerable<UserProperty> properties, string userLogin)

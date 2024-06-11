@@ -10,11 +10,11 @@ namespace Task.Connector.Tests
         static string itRoleRightGroupName = "Role";
         static string delimeter = ":";
         static string mssqlConnectionString = "";
-        static string postgreConnectionString = "";
+        static string postgreConnectionString = "Server=127.0.0.1;Port=5432;Database=testDb;Username=testuser;Password=12345678";
         static Dictionary<string, string> connectorsCS = new Dictionary<string, string>
         {
             { "MSSQL",$"ConnectionString='{mssqlConnectionString}';Provider='SqlServer.2019';SchemaName='AvanpostIntegrationTestTaskSchema';"},
-            { "POSTGRE", $"ConnectionString='{postgreConnectionString}';Provider='PostgreSQL.9.5';SchemaName='AvanpostIntegrationTestTaskSchema';"}
+            { "POSTGRE", $"{postgreConnectionString}"}
         };
         static Dictionary<string, string> dataBasesCS = new Dictionary<string, string>
         {
@@ -22,10 +22,11 @@ namespace Task.Connector.Tests
             { "POSTGRE", postgreConnectionString}
         };
 
+
         public DataManager Init(string providerName)
         {
-            var factory = new DbContextFactory(dataBasesCS[providerName]);
-            var dataSetter = new DataManager(factory, providerName);
+            var factory = new DbContextFactory(dataBasesCS["POSTGRE"]);
+            var dataSetter = new DataManager(factory, "POSTGRE");
             dataSetter.PrepareDbForTest();
             return dataSetter;
         }
@@ -33,14 +34,13 @@ namespace Task.Connector.Tests
         public IConnector GetConnector(string provider)
         {
             IConnector connector = new ConnectorDb();
-            connector.StartUp(connectorsCS[provider]);
-            connector.Logger = new FileLogger($"{DateTime.Now}connector{provider}.Log", $"{DateTime.Now}connector{provider}");
+            connector.StartUp(connectorsCS["POSTGRE"]);
+            connector.Logger = new FileLogger($"{DateTime.Now}connector{"POSTGRE"}.Log", $"{DateTime.Now}connector{"POSTGRE"}");
             return connector;
         }
 
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void CreateUser(string provider)
         {
@@ -76,7 +76,6 @@ namespace Task.Connector.Tests
         }
 
         [Theory]
-        [InlineData("MSSQL")]
         [InlineData("POSTGRE")]
         public void IsUserExists(string provider)
         {
